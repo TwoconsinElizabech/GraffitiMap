@@ -1,0 +1,180 @@
+{
+  "preset_patterns": {
+    "web_security": {
+      "name": "Web安全相关",
+      "patterns": [
+        {
+          "name": "SQL注入关键词",
+          "pattern": "(?i)(union|select|insert|update|delete|drop|create|alter)\\s*[\\(\\s]",
+          "description": "检测SQL注入相关关键词"
+        },
+        {
+          "name": "XSS脚本标签",
+          "pattern": "(?i)<\\s*(script|iframe|object|embed|form)\\s*[^>]*>",
+          "description": "检测XSS攻击相关标签"
+        },
+        {
+          "name": "命令注入",
+          "pattern": "(?i)(cmd|exec|system|shell_exec|passthru|eval|base64_decode)",
+          "description": "检测命令注入相关函数"
+        }
+      ]
+    },
+    "cms_paths": {
+      "name": "CMS路径",
+      "patterns": [
+        {
+          "name": "WordPress路径",
+          "pattern": "wp-(admin|content|includes|config|login|cron|mail|load|blog-header|comments-post|trackback|xmlrpc)",
+          "description": "WordPress相关路径和文件"
+        },
+        {
+          "name": "ThinkPHP路径",
+          "pattern": "(Application|ThinkPHP|Public|Runtime|Conf|Lib|Common|Home|Admin)/",
+          "description": "ThinkPHP框架相关路径"
+        },
+        {
+          "name": "Drupal路径",
+          "pattern": "(sites|modules|themes|includes|misc|profiles)/",
+          "description": "Drupal CMS相关路径"
+        },
+        {
+          "name": "Joomla路径",
+          "pattern": "(administrator|components|modules|plugins|templates|libraries)/",
+          "description": "Joomla CMS相关路径"
+        }
+      ]
+    },
+    "api_interfaces": {
+      "name": "API接口",
+      "patterns": [
+        {
+          "name": "API路径",
+          "pattern": "(?i).*api.*",
+          "description": "包含API关键字的路径"
+        },
+        {
+          "name": "RESTful API",
+          "pattern": "(?i).*(rest|restful).*",
+          "description": "RESTful API相关路径"
+        },
+        {
+          "name": "GraphQL API",
+          "pattern": "(?i).*graphql.*",
+          "description": "GraphQL API相关路径"
+        },
+        {
+          "name": "WebService",
+          "pattern": "(?i).*(webservice|ws|service).*",
+          "description": "Web服务相关路径"
+        }
+      ]
+    },
+    "file_extensions": {
+      "name": "文件扩展名",
+      "patterns": [
+        {
+          "name": "可执行文件",
+          "pattern": "\\.(php|asp|aspx|jsp|py|pl|cgi|sh|bat|exe)$",
+          "description": "可执行文件扩展名"
+        },
+        {
+          "name": "配置文件",
+          "pattern": "\\.(conf|config|ini|xml|json|yaml|yml|properties)$",
+          "description": "配置文件扩展名"
+        },
+        {
+          "name": "备份文件",
+          "pattern": "\\.(bak|backup|old|orig|tmp|~)$",
+          "description": "备份文件扩展名"
+        }
+      ]
+    },
+    "sensitive_files": {
+      "name": "敏感文件",
+      "patterns": [
+        {
+          "name": "数据库文件",
+          "pattern": "\\.(sql|db|sqlite|mdb|accdb)$",
+          "description": "数据库文件"
+        },
+        {
+          "name": "日志文件",
+          "pattern": "\\.(log|logs)$",
+          "description": "日志文件"
+        },
+        {
+          "name": "密钥文件",
+          "pattern": "\\.(key|pem|crt|cer|p12|pfx)$",
+          "description": "密钥和证书文件"
+        }
+      ]
+    },
+    "common_directories": {
+      "name": "常见目录",
+      "patterns": [
+        {
+          "name": "管理目录",
+          "pattern": "(admin|administrator|manage|manager|control|panel)",
+          "description": "管理后台相关目录"
+        },
+        {
+          "name": "上传目录",
+          "pattern": "(upload|uploads|files|attachments|media)",
+          "description": "文件上传相关目录"
+        },
+        {
+          "name": "备份目录",
+          "pattern": "(backup|backups|bak|old|archive)",
+          "description": "备份相关目录"
+        }
+      ]
+    },
+    "swagger_docs": {
+      "name": "Swagger文档",
+      "patterns": [
+        {
+          "name": "Swagger UI",
+          "pattern": "(?i).*(swagger-ui|swagger).*",
+          "description": "Swagger UI相关路径"
+        },
+        {
+          "name": "API文档",
+          "pattern": "(?i).*(api-docs|apidocs|docs).*",
+          "description": "API文档相关路径"
+        },
+        {
+          "name": "Swagger资源",
+          "pattern": "(?i).*(swagger-resources).*",
+          "description": "Swagger资源文件"
+        }
+      ]
+    },
+    "service_ports": {
+      "name": "服务端口",
+      "patterns": [
+        {
+          "name": "HadoopYARN端口",
+          "pattern": ":8088",
+          "description": "HadoopYARN默认端口8088"
+        },
+        {
+          "name": "JBoss端口",
+          "pattern": ":8080",
+          "description": "JBoss默认端口8080"
+        },
+        {
+          "name": "常见Web端口",
+          "pattern": ":(80|443|8080|8443|8000|8888|9000|3000)",
+          "description": "常见Web服务端口"
+        },
+        {
+          "name": "数据库端口",
+          "pattern": ":(3306|5432|1521|1433|27017|6379)",
+          "description": "常见数据库端口"
+        }
+      ]
+    }
+  },
+  "custom_patterns": []
+}

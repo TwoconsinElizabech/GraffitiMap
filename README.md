@@ -45,8 +45,7 @@ pip install -r requirements.txt
 
 ### 1. 克隆项目
 ```bash
-git clone <repository-url>
-cd ProjectM
+git clone https://github.com/TwoconsinElizabech/GraffitiMap.git
 ```
 
 ### 2. 安装依赖

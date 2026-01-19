@@ -28,6 +28,7 @@
 ### 系统要求
 - Python 3.8 或更高版本
 - Windows 10/11 (推荐)
+- Microsoft Visual C++ 2015–2022 Redistributable
 
 ### 依赖包
 ```bash

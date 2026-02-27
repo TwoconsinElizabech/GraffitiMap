@@ -62,10 +62,53 @@ pip install -r requirements.txt
 python main.py
 ```
 
-### 4. 运行测试
+### 4. 运行程序
+如果遇到PyQt6 DLL加载问题，可以使用以下方式：
+
+**方式1：直接运行**
 ```bash
-python test_integration.py
+python main.py
 ```
+
+**方式2：使用批处理文件（推荐）**
+```bash
+run_app.bat
+```
+
+**方式3：如果遇到问题，先运行诊断**
+```bash
+python debug_import.py
+```
+
+### 5. 运行测试
+```bash
+# 原有功能测试
+python test_integration.py
+
+# v2.0.0新功能测试
+python test_v2_features.py
+```
+
+### 常见问题解决
+如果遇到"PyQt6导入失败"或"DLL Load failed"错误：
+
+1. **重新安装PyQt6**：
+   ```bash
+   pip uninstall PyQt6 -y
+   pip install PyQt6
+   ```
+
+2. **安装Microsoft Visual C++ Redistributable**
+
+3. **使用conda安装**：
+   ```bash
+   conda install pyqt
+   ```
+
+4. **检查Python环境**：
+   ```bash
+   python debug_import.py
+   ```
 
 ## 项目结构
 

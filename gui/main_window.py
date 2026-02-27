@@ -21,6 +21,10 @@ from gui.dictionary_widget import DictionaryWidget
 from gui.analyzer_widget import AnalyzerWidget
 from gui.regex_widget import RegexWidget
 from gui.big_dictionary_widget import BigDictionaryWidget
+from gui.combination_widget import CombinationWidget
+from gui.case_transform_widget import CaseTransformWidget
+from gui.url_analyzer_widget import URLAnalyzerWidget
+from gui.fuzzing_widget import FuzzingWidget
 
 
 class MainWindow(QMainWindow):
@@ -42,6 +46,10 @@ class MainWindow(QMainWindow):
         self.analyzer_widget = None
         self.regex_widget = None
         self.big_dictionary_widget = None
+        self.combination_widget = None
+        self.case_transform_widget = None
+        self.url_analyzer_widget = None
+        self.fuzzing_widget = None
         
         # 状态栏组件
         self.status_label = None
@@ -96,9 +104,17 @@ class MainWindow(QMainWindow):
         self.analyzer_widget = AnalyzerWidget()
         self.regex_widget = RegexWidget()
         self.big_dictionary_widget = BigDictionaryWidget()
+        self.combination_widget = CombinationWidget()
+        self.case_transform_widget = CaseTransformWidget()
+        self.url_analyzer_widget = URLAnalyzerWidget()
+        self.fuzzing_widget = FuzzingWidget()
         
         # 添加标签页
         self.tab_widget.addTab(self.dictionary_widget, "📚 字典管理")
+        self.tab_widget.addTab(self.combination_widget, "🔧 组合生成")
+        self.tab_widget.addTab(self.case_transform_widget, "🔤 大小写转换")
+        self.tab_widget.addTab(self.url_analyzer_widget, "🔗 URL分析")
+        self.tab_widget.addTab(self.fuzzing_widget, "🎯 模糊测试")
         self.tab_widget.addTab(self.analyzer_widget, "📊 分析功能")
         self.tab_widget.addTab(self.big_dictionary_widget, "📦 大字典处理")
         self.tab_widget.addTab(self.regex_widget, "🔍 正则表达式")
@@ -355,6 +371,19 @@ class MainWindow(QMainWindow):
         
         if self.big_dictionary_widget:
             self.big_dictionary_widget.status_message.connect(self.show_status_message)
+        
+        # 连接新功能组件信号
+        if self.combination_widget:
+            self.combination_widget.status_message.connect(self.show_status_message)
+        
+        if self.case_transform_widget:
+            self.case_transform_widget.status_message.connect(self.show_status_message)
+        
+        if self.url_analyzer_widget:
+            self.url_analyzer_widget.status_message.connect(self.show_status_message)
+        
+        if self.fuzzing_widget:
+            self.fuzzing_widget.status_message.connect(self.show_status_message)
     
     def load_initial_data(self):
         """加载初始数据"""
@@ -536,11 +565,15 @@ class MainWindow(QMainWindow):
         <h4>主要功能：</h4>
         <ul>
         <li><b>字典管理</b>：创建、导入、导出和管理字典</li>
+        <li><b>组合生成</b>：多区域内容的笛卡尔积组合生成</li>
+        <li><b>大小写转换</b>：多种策略的随机大小写转换</li>
+        <li><b>URL分析</b>：过滤和分析带参数的URL</li>
+        <li><b>模糊测试</b>：路径变换、参数注入等模糊测试变体生成</li>
         <li><b>去重功能</b>：多种策略去除重复词条</li>
         <li><b>正则分析</b>：使用正则表达式分析和分类词条</li>
         <li><b>相似性分析</b>：分析两个字典的相似度</li>
         <li><b>大字典处理</b>：支持大文件合并和处理</li>
-        <li><b>文件支持</b>：支持TXT、JSON、CSV格式</li>
+        <li><b>文件支持</b>：支持TXT、JSON、CSV、Excel格式</li>
         </ul>
         
         <h4>相似度算法说明：</h4>
@@ -593,17 +626,21 @@ class MainWindow(QMainWindow):
         <h3>{APP_NAME}</h3>
         <p>版本: {APP_VERSION}</p>
         
-        <p>一个功能强大的字典管理工具，支持：</p>
+        <p>一个功能强大的字典管理和分析工具，支持：</p>
         <ul>
-        <li>多格式文件导入导出</li>
+        <li>多格式文件导入导出（TXT、JSON、CSV、Excel）</li>
+        <li>组合模式字典生成</li>
+        <li>随机大小写转换</li>
+        <li>URL过滤分析</li>
+        <li>模糊测试字典生成</li>
         <li>智能去重功能</li>
-        <li>标签分类管理</li>
         <li>正则表达式分析</li>
+        <li>字典相似性分析</li>
         <li>数据备份恢复</li>
         </ul>
         
         <p>基于 PyQt6 开发</p>
-        <p>© 2026 字典管理工具</p>
+        <p>© 2026 TwoconsinElizabech</p>
         """
         
         QMessageBox.about(self, "关于", about_text)

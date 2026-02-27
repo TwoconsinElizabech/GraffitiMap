@@ -95,6 +95,46 @@ class DatabaseManager:
                 )
             ''')
             
+            # 创建URL分析结果表
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS url_analysis (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    dictionary_id INTEGER NOT NULL,
+                    url TEXT NOT NULL,
+                    has_params BOOLEAN DEFAULT 0,
+                    domain TEXT,
+                    path TEXT,
+                    params TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (dictionary_id) REFERENCES dictionaries(id) ON DELETE CASCADE
+                )
+            ''')
+            
+            # 创建组合模式配置表
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS combination_configs (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    config_data TEXT NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+            
+            # 创建模糊测试配置表
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS fuzzing_configs (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    replacement_rules TEXT NOT NULL,
+                    position_swap BOOLEAN DEFAULT 0,
+                    param_injection BOOLEAN DEFAULT 0,
+                    path_traversal BOOLEAN DEFAULT 0,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+            
             # 创建索引以优化查询性能
             self._create_indexes(cursor)
             
@@ -113,7 +153,12 @@ class DatabaseManager:
             "CREATE INDEX IF NOT EXISTS idx_words_word ON words(word)",
             "CREATE INDEX IF NOT EXISTS idx_word_tags_word_id ON word_tags(word_id)",
             "CREATE INDEX IF NOT EXISTS idx_word_tags_tag_id ON word_tags(tag_id)",
-            "CREATE INDEX IF NOT EXISTS idx_dictionaries_name ON dictionaries(name)"
+            "CREATE INDEX IF NOT EXISTS idx_dictionaries_name ON dictionaries(name)",
+            "CREATE INDEX IF NOT EXISTS idx_url_analysis_dictionary_id ON url_analysis(dictionary_id)",
+            "CREATE INDEX IF NOT EXISTS idx_url_analysis_has_params ON url_analysis(has_params)",
+            "CREATE INDEX IF NOT EXISTS idx_url_analysis_domain ON url_analysis(domain)",
+            "CREATE INDEX IF NOT EXISTS idx_combination_configs_name ON combination_configs(name)",
+            "CREATE INDEX IF NOT EXISTS idx_fuzzing_configs_name ON fuzzing_configs(name)"
         ]
         
         for index_sql in indexes:

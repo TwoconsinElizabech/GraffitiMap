@@ -6,7 +6,7 @@ from pathlib import Path
 
 # 应用基础配置
 APP_NAME = "GraffitiMap"
-APP_VERSION = "1.0.0"
+APP_VERSION = "2.0.0"
 APP_AUTHOR = "TwoconsinElizabech"
 
 # 路径配置

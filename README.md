@@ -32,6 +32,7 @@
 ### 系统要求
 - Python 3.8 或更高版本
 - Windows 10/11 (推荐)
+- Microsoft Visual C++ 2015–2022 Redistributable
 
 ### 依赖包
 ```bash
@@ -48,8 +49,7 @@ pip install -r requirements.txt
 
 ### 1. 克隆项目
 ```bash
-git clone <repository-url>
-cd ProjectM
+git clone https://github.com/TwoconsinElizabech/GraffitiMap.git
 ```
 
 ### 2. 安装依赖
@@ -336,9 +336,6 @@ A: 相似度值在0-1之间，越接近1表示两个字典越相似，0表示完
 - 重新设计字典管理界面，专注于分类和导出
 - 完整的GUI界面实现
 
-## 许可证
-
-本项目采用 MIT 许可证，详见 LICENSE 文件。
 
 ## 作者
 
@@ -352,7 +349,6 @@ A: 相似度值在0-1之间，越接近1表示两个字典越相似，0表示完
 
 如有问题或建议，请通过以下方式联系：
 - 提交 GitHub Issue
-- 发送邮件至项目维护者
 
 ---
 

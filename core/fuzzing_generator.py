@@ -61,33 +61,55 @@ class FuzzingGenerator:
         
         return path.split('/')
     
-    def replace_path_segments(self, path: str, replacements: Dict[str, List[str]]) -> List[str]:
+    def replace_path_segments(self, url_or_path: str, replacements: Dict[str, List[str]],
+                            selected_rules: Optional[List[str]] = None) -> List[str]:
         """
-        替换路径段
+        替换路径段，保持HTTP/HTTPS主域名不变
         
         Args:
-            path: 原始路径
+            url_or_path: 原始URL或路径
             replacements: 替换规则字典
+            selected_rules: 选择执行的规则列表，None表示执行所有规则
             
         Returns:
-            List[str]: 替换后的路径列表
+            List[str]: 替换后的URL/路径列表
         """
+        # 检查是否为完整URL
+        if url_or_path.startswith(('http://', 'https://')):
+            parsed = urlparse(url_or_path)
+            base_url = f"{parsed.scheme}://{parsed.netloc}"
+            path = parsed.path
+            query = f"?{parsed.query}" if parsed.query else ""
+            fragment = f"#{parsed.fragment}" if parsed.fragment else ""
+        else:
+            base_url = ""
+            path = url_or_path
+            query = ""
+            fragment = ""
+        
         segments = self.extract_path_segments(path)
         if not segments:
-            return [path]
+            return [url_or_path]
         
-        results = set([path])  # 包含原始路径
+        results = set([url_or_path])  # 包含原始路径
+        
+        # 过滤替换规则
+        if selected_rules is not None:
+            filtered_replacements = {k: v for k, v in replacements.items() if k in selected_rules}
+        else:
+            filtered_replacements = replacements
         
         # 对每个段进行替换
         for i, segment in enumerate(segments):
-            for pattern, replacement_list in replacements.items():
+            for pattern, replacement_list in filtered_replacements.items():
                 # 检查段是否匹配模式
                 if self._matches_pattern(segment, pattern):
                     for replacement in replacement_list:
                         new_segments = segments.copy()
                         new_segments[i] = replacement
                         new_path = '/' + '/'.join(new_segments)
-                        results.add(new_path)
+                        new_url = base_url + new_path + query + fragment
+                        results.add(new_url)
                 
                 # 部分替换（如果段包含模式）
                 if pattern in segment:
@@ -96,7 +118,8 @@ class FuzzingGenerator:
                         new_segments = segments.copy()
                         new_segments[i] = new_segment
                         new_path = '/' + '/'.join(new_segments)
-                        results.add(new_path)
+                        new_url = base_url + new_path + query + fragment
+                        results.add(new_url)
         
         return list(results)
     
@@ -125,35 +148,63 @@ class FuzzingGenerator:
         
         return False
     
-    def swap_path_positions(self, path: str) -> List[str]:
+    def swap_path_positions(self, url_or_path: str, replacement_rules: Optional[Dict[str, List[str]]] = None,
+                           selected_rules: Optional[List[str]] = None) -> List[str]:
         """
-        交换路径段位置
+        交换路径段位置，保持HTTP/HTTPS主域名不变，可选择应用替换规则
         
         Args:
-            path: 原始路径
+            url_or_path: 原始URL或路径
+            replacement_rules: 替换规则字典
+            selected_rules: 选择执行的规则列表
             
         Returns:
-            List[str]: 位置交换后的路径列表
+            List[str]: 位置交换后的URL/路径列表
         """
+        # 检查是否为完整URL
+        if url_or_path.startswith(('http://', 'https://')):
+            parsed = urlparse(url_or_path)
+            base_url = f"{parsed.scheme}://{parsed.netloc}"
+            path = parsed.path
+            query = f"?{parsed.query}" if parsed.query else ""
+            fragment = f"#{parsed.fragment}" if parsed.fragment else ""
+        else:
+            base_url = ""
+            path = url_or_path
+            query = ""
+            fragment = ""
+        
         segments = self.extract_path_segments(path)
         if len(segments) < 2:
-            return [path]
+            return [url_or_path]
         
-        results = set([path])  # 包含原始路径
+        results = set([url_or_path])  # 包含原始路径
         
         # 相邻段交换
         for i in range(len(segments) - 1):
             new_segments = segments.copy()
             new_segments[i], new_segments[i + 1] = new_segments[i + 1], new_segments[i]
             new_path = '/' + '/'.join(new_segments)
-            results.add(new_path)
+            new_url = base_url + new_path + query + fragment
+            results.add(new_url)
+            
+            # 如果有替换规则，对交换后的路径应用替换
+            if replacement_rules:
+                replaced_variants = self.replace_path_segments(new_url, replacement_rules, selected_rules)
+                results.update(replaced_variants)
         
         # 首尾交换
         if len(segments) > 2:
             new_segments = segments.copy()
             new_segments[0], new_segments[-1] = new_segments[-1], new_segments[0]
             new_path = '/' + '/'.join(new_segments)
-            results.add(new_path)
+            new_url = base_url + new_path + query + fragment
+            results.add(new_url)
+            
+            # 如果有替换规则，对交换后的路径应用替换
+            if replacement_rules:
+                replaced_variants = self.replace_path_segments(new_url, replacement_rules, selected_rules)
+                results.update(replaced_variants)
         
         # 随机位置交换（限制数量避免过多）
         import random
@@ -163,29 +214,54 @@ class FuzzingGenerator:
                 i, j = random.sample(range(len(segments)), 2)
                 new_segments[i], new_segments[j] = new_segments[j], new_segments[i]
                 new_path = '/' + '/'.join(new_segments)
-                results.add(new_path)
+                new_url = base_url + new_path + query + fragment
+                results.add(new_url)
+                
+                # 如果有替换规则，对交换后的路径应用替换
+                if replacement_rules:
+                    replaced_variants = self.replace_path_segments(new_url, replacement_rules, selected_rules)
+                    results.update(replaced_variants)
         
         return list(results)
     
-    def add_path_traversal(self, path: str, max_depth: int = 3) -> List[str]:
+    def add_path_traversal(self, url_or_path: str, max_depth: int = 3,
+                          custom_payloads: Optional[List[str]] = None) -> List[str]:
         """
-        添加路径遍历载荷
+        添加路径遍历载荷，保持HTTP/HTTPS主域名不变
         
         Args:
-            path: 原始路径
+            url_or_path: 原始URL或路径
             max_depth: 最大遍历深度
+            custom_payloads: 自定义路径遍历载荷列表
             
         Returns:
-            List[str]: 包含路径遍历的路径列表
+            List[str]: 包含路径遍历的URL/路径列表
         """
-        results = set([path])  # 包含原始路径
+        # 检查是否为完整URL
+        if url_or_path.startswith(('http://', 'https://')):
+            parsed = urlparse(url_or_path)
+            base_url = f"{parsed.scheme}://{parsed.netloc}"
+            path = parsed.path
+            query = f"?{parsed.query}" if parsed.query else ""
+            fragment = f"#{parsed.fragment}" if parsed.fragment else ""
+        else:
+            base_url = ""
+            path = url_or_path
+            query = ""
+            fragment = ""
         
-        for payload in self.path_traversal_payloads:
+        results = set([url_or_path])  # 包含原始路径
+        
+        # 使用自定义载荷或默认载荷
+        payloads = custom_payloads if custom_payloads else self.path_traversal_payloads
+        
+        for payload in payloads:
             # 在路径前添加遍历载荷
             for depth in range(1, max_depth + 1):
                 traversal = payload * depth
                 new_path = traversal + path.lstrip('/')
-                results.add('/' + new_path)
+                new_url = base_url + '/' + new_path + query + fragment
+                results.add(new_url)
             
             # 在路径段之间插入遍历载荷
             segments = self.extract_path_segments(path)
@@ -194,7 +270,8 @@ class FuzzingGenerator:
                     new_segments = segments.copy()
                     new_segments.insert(i, payload.rstrip('/\\'))
                     new_path = '/' + '/'.join(new_segments)
-                    results.add(new_path)
+                    new_url = base_url + new_path + query + fragment
+                    results.add(new_url)
         
         return list(results)
     
@@ -273,17 +350,24 @@ class FuzzingGenerator:
             # 字符替换
             if config.get('replacement_rules'):
                 replacement_rules = config['replacement_rules']
-                replaced_targets = self.replace_path_segments(target, replacement_rules)
+                selected_rules = config.get('selected_replacement_rules')
+                replaced_targets = self.replace_path_segments(target, replacement_rules, selected_rules)
                 results.update(replaced_targets)
             
             # 位置交换
             if config.get('position_swap', False):
-                swapped_targets = self.swap_path_positions(target)
+                swapped_targets = self.swap_path_positions(
+                    target,
+                    replacement_rules if config.get('replacement_rules') else None,
+                    selected_rules
+                )
                 results.update(swapped_targets)
             
             # 路径遍历
             if config.get('path_traversal', False):
-                traversal_targets = self.add_path_traversal(target)
+                custom_payloads = config.get('custom_traversal_payloads')
+                max_depth = config.get('traversal_max_depth', 3)
+                traversal_targets = self.add_path_traversal(target, max_depth, custom_payloads)
                 results.update(traversal_targets)
             
             # 参数注入（仅对URL）

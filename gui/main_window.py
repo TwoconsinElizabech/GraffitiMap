@@ -21,10 +21,27 @@ from gui.dictionary_widget import DictionaryWidget
 from gui.analyzer_widget import AnalyzerWidget
 from gui.regex_widget import RegexWidget
 from gui.big_dictionary_widget import BigDictionaryWidget
-from gui.combination_widget import CombinationWidget
-from gui.case_transform_widget import CaseTransformWidget
-from gui.url_analyzer_widget import URLAnalyzerWidget
-from gui.fuzzing_widget import FuzzingWidget
+
+# 尝试导入新功能模块，如果失败则使用占位符
+try:
+    from gui.combination_widget import CombinationWidget
+except ImportError:
+    CombinationWidget = None
+
+try:
+    from gui.case_transform_widget import CaseTransformWidget
+except ImportError:
+    CaseTransformWidget = None
+
+try:
+    from gui.url_analyzer_widget import URLAnalyzerWidget
+except ImportError:
+    URLAnalyzerWidget = None
+
+try:
+    from gui.fuzzing_widget import FuzzingWidget
+except ImportError:
+    FuzzingWidget = None
 
 
 class MainWindow(QMainWindow):
@@ -104,17 +121,41 @@ class MainWindow(QMainWindow):
         self.analyzer_widget = AnalyzerWidget()
         self.regex_widget = RegexWidget()
         self.big_dictionary_widget = BigDictionaryWidget()
-        self.combination_widget = CombinationWidget()
-        self.case_transform_widget = CaseTransformWidget()
-        self.url_analyzer_widget = URLAnalyzerWidget()
-        self.fuzzing_widget = FuzzingWidget()
+        
+        # 创建新功能页面（如果模块可用）
+        if CombinationWidget:
+            self.combination_widget = CombinationWidget()
+        else:
+            self.combination_widget = None
+            
+        if CaseTransformWidget:
+            self.case_transform_widget = CaseTransformWidget()
+        else:
+            self.case_transform_widget = None
+            
+        if URLAnalyzerWidget:
+            self.url_analyzer_widget = URLAnalyzerWidget()
+        else:
+            self.url_analyzer_widget = None
+            
+        if FuzzingWidget:
+            self.fuzzing_widget = FuzzingWidget()
+        else:
+            self.fuzzing_widget = None
         
         # 添加标签页
         self.tab_widget.addTab(self.dictionary_widget, "📚 字典管理")
-        self.tab_widget.addTab(self.combination_widget, "🔧 组合生成")
-        self.tab_widget.addTab(self.case_transform_widget, "🔤 大小写转换")
-        self.tab_widget.addTab(self.url_analyzer_widget, "🔗 URL分析")
-        self.tab_widget.addTab(self.fuzzing_widget, "🎯 模糊测试")
+        
+        # 只添加可用的新功能标签页
+        if self.combination_widget:
+            self.tab_widget.addTab(self.combination_widget, "🔧 组合生成")
+        if self.case_transform_widget:
+            self.tab_widget.addTab(self.case_transform_widget, "🔤 大小写转换")
+        if self.url_analyzer_widget:
+            self.tab_widget.addTab(self.url_analyzer_widget, "🔗 URL分析")
+        if self.fuzzing_widget:
+            self.tab_widget.addTab(self.fuzzing_widget, "🎯 模糊测试")
+            
         self.tab_widget.addTab(self.analyzer_widget, "📊 分析功能")
         self.tab_widget.addTab(self.big_dictionary_widget, "📦 大字典处理")
         self.tab_widget.addTab(self.regex_widget, "🔍 正则表达式")

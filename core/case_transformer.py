@@ -266,7 +266,7 @@ class CaseTransformer:
             self.logger.error(f"文本转换失败: {e}")
             return text
     
-    def transform_word_list(self, words: List[str], strategy: CaseStrategy, 
+    def transform_word_list(self, words: List[str], strategy: CaseStrategy,
                           keep_original: bool = True, **kwargs) -> List[str]:
         """
         转换词条列表
@@ -285,10 +285,22 @@ class CaseTransformer:
         if keep_original:
             result.extend(words)
         
-        for word in words:
-            transformed = self.transform_text(word, strategy, **kwargs)
-            if transformed != word:  # 只添加不同的变体
-                result.append(transformed)
+        # 检查是否是随机策略且需要生成多个变体
+        if strategy in [CaseStrategy.RANDOM_CHAR, CaseStrategy.RANDOM_WORD, CaseStrategy.FIRST_LETTER]:
+            variant_count = kwargs.get('variant_count', 5)
+            
+            for word in words:
+                variants = self.generate_random_variants(word, variant_count, strategy)
+                # 排除原始词条（如果已经包含在结果中）
+                for variant in variants:
+                    if variant != word or not keep_original:
+                        result.append(variant)
+        else:
+            # 确定性策略，每个词条只生成一个变体
+            for word in words:
+                transformed = self.transform_text(word, strategy, **kwargs)
+                if transformed != word:  # 只添加不同的变体
+                    result.append(transformed)
         
         return list(set(result))  # 去重
     

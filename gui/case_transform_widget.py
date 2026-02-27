@@ -15,8 +15,38 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt, pyqtSignal, QThread, pyqtSlot
 from PyQt6.QtGui import QFont
 
-from core.case_transformer import case_transformer, CaseStrategy
-from core.dictionary_manager import dictionary_manager
+try:
+    from core.case_transformer import case_transformer, CaseStrategy
+    from core.dictionary_manager import dictionary_manager
+except ImportError as e:
+    print(f"大小写转换模块导入失败: {e}")
+    # 创建空的占位符
+    class DummyTransformer:
+        def transform_word_list(self, words, strategy, keep_original, **kwargs): return words
+        def generate_random_variants(self, word, count, strategy): return [word]
+        def transform_text(self, text, strategy, **kwargs): return text
+    
+    case_transformer = DummyTransformer()
+    
+    class DummyStrategy:
+        RANDOM_CHAR = "random_char"
+        RANDOM_WORD = "random_word"
+        FIRST_LETTER = "first_letter"
+        ALTERNATING = "alternating"
+        CAMEL_CASE = "camel_case"
+        PASCAL_CASE = "pascal_case"
+        SNAKE_CASE_UPPER = "snake_case_upper"
+        KEBAB_CASE_UPPER = "kebab_case_upper"
+    
+    CaseStrategy = DummyStrategy()
+    
+    class DummyManager:
+        def get_all_dictionaries(self): return []
+        def get_words(self, dict_id, limit=None): return []
+        def create_dictionary(self, name, desc): return 0
+        def add_words(self, dict_id, words): return 0
+    
+    dictionary_manager = DummyManager()
 
 
 class CaseTransformWorker(QThread):
@@ -226,8 +256,9 @@ class CaseTransformWidget(QWidget):
         variant_layout.addWidget(QLabel("随机变体数量:"))
         
         self.variant_count_spin = QSpinBox()
-        self.variant_count_spin.setRange(1, 20)
+        self.variant_count_spin.setRange(1, 50)
         self.variant_count_spin.setValue(5)
+        self.variant_count_spin.setToolTip("对于完全随机策略，每个词条生成多少个随机变体")
         variant_layout.addWidget(self.variant_count_spin)
         variant_layout.addStretch()
         
@@ -280,6 +311,11 @@ class CaseTransformWidget(QWidget):
         header_layout.addWidget(self.result_count_label)
         
         header_layout.addStretch()
+        
+        # 清空结果按钮
+        clear_btn = QPushButton("🗑️ 清空结果")
+        clear_btn.clicked.connect(self.clear_results)
+        header_layout.addWidget(clear_btn)
         
         # 导出按钮
         export_btn = QPushButton("💾 导出结果")
@@ -443,6 +479,10 @@ DELETE_ALL_DATA"""
         if strategy == CaseStrategy.ALTERNATING:
             params['start_upper'] = self.start_upper_cb.isChecked()
         
+        # 添加随机变体数量参数
+        if strategy in [CaseStrategy.RANDOM_CHAR, CaseStrategy.RANDOM_WORD, CaseStrategy.FIRST_LETTER]:
+            params['variant_count'] = self.variant_count_spin.value()
+        
         return params
     
     def transform_case(self):
@@ -600,6 +640,13 @@ DELETE_ALL_DATA"""
         except Exception as e:
             self.logger.error(f"保存到字典失败: {e}")
             QMessageBox.critical(self, "错误", f"保存失败: {str(e)}")
+    
+    def clear_results(self):
+        """清空结果"""
+        self.current_results = []
+        self.result_table.setRowCount(0)
+        self.result_count_label.setText("词条数: 0")
+        self.status_message.emit("结果已清空")
 
 
 if __name__ == "__main__":

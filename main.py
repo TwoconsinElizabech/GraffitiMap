@@ -11,13 +11,70 @@ from pathlib import Path
 project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
 
-try:
-    from PyQt6.QtWidgets import QApplication, QMessageBox, QSplashScreen
-    from PyQt6.QtCore import Qt, QDir, QTimer, QThread, pyqtSignal
-    from PyQt6.QtGui import QIcon, QPixmap, QPainter, QFont
-except ImportError:
-    print("错误: 未安装PyQt6，请运行: pip install PyQt6")
+# 检查PyQt6并提供解决方案
+def check_and_fix_pyqt6():
+    """检查PyQt6并提供修复建议"""
+    try:
+        # 尝试导入PyQt6
+        from PyQt6.QtWidgets import QApplication, QMessageBox, QSplashScreen
+        from PyQt6.QtCore import Qt, QDir, QTimer, QThread, pyqtSignal
+        from PyQt6.QtGui import QIcon, QPixmap, QPainter, QFont
+        return True, None
+        
+    except ImportError as e:
+        error_msg = str(e)
+        
+        # 记录详细错误信息到日志
+        log_dir = Path(__file__).parent / "logs"
+        log_dir.mkdir(exist_ok=True)
+        
+        with open(log_dir / "error.log", "a", encoding="utf-8") as f:
+            f.write(f"PyQt6导入失败: {error_msg}\n")
+            f.write(f"Python路径: {sys.executable}\n")
+            f.write(f"工作目录: {os.getcwd()}\n")
+        
+        # 根据错误类型提供具体解决方案
+        if "DLL load failed" in error_msg:
+            if "QtCore" in error_msg:
+                print("❌ PyQt6 DLL加载失败 - QtCore模块")
+                print("\n🔧 这是Anaconda环境中的常见问题，请执行以下修复步骤:")
+                print("\n方法1 - 自动修复 (推荐):")
+                print("  python fix_pyqt6_dll.py")
+                print("\n方法2 - 手动修复:")
+                print("  1. conda uninstall pyqt")
+                print("  2. conda install -c conda-forge pyqt")
+                print("\n方法3 - 使用pip:")
+                print("  1. pip uninstall PyQt6 PyQt6-Qt6 PyQt6-sip")
+                print("  2. pip install PyQt6")
+                print("\n方法4 - 安装VC++ Redistributable:")
+                print("  下载: https://aka.ms/vs/17/release/vc_redist.x64.exe")
+                
+            else:
+                print("❌ PyQt6 DLL加载失败")
+                print("请安装Microsoft Visual C++ Redistributable")
+                print("下载: https://aka.ms/vs/17/release/vc_redist.x64.exe")
+        else:
+            print("❌ PyQt6未安装或安装不完整")
+            print("请运行: pip install PyQt6")
+        
+        print(f"\n详细错误信息: {error_msg}")
+        print("错误日志已保存到: logs/error.log")
+        
+        return False, error_msg
+
+# 检查PyQt6
+pyqt6_ok, error_msg = check_and_fix_pyqt6()
+
+if not pyqt6_ok:
+    print("\n💡 建议:")
+    print("1. 如果是Anaconda环境，运行: python fix_pyqt6_dll.py")
+    print("2. 或者使用命令行模式: python start_graffiti.py")
     sys.exit(1)
+
+# 如果检查通过，导入PyQt6模块
+from PyQt6.QtWidgets import QApplication, QMessageBox, QSplashScreen
+from PyQt6.QtCore import Qt, QDir, QTimer, QThread, pyqtSignal
+from PyQt6.QtGui import QIcon, QPixmap, QPainter, QFont
 
 from gui.main_window import MainWindow
 from core.database import db_manager

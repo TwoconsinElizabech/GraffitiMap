@@ -457,6 +457,58 @@ class RegexAnalyzer:
         return suggestions
 
 
+class DictionaryAnalyzer:
+    """字典分析器 - 兼容性类"""
+    
+    def __init__(self, db_manager):
+        """初始化字典分析器"""
+        self.db_manager = db_manager
+        self.regex_analyzer = RegexAnalyzer()
+    
+    def analyze_dictionary(self, dictionary_id: int) -> Dict[str, Any]:
+        """
+        分析字典统计信息
+        
+        Args:
+            dictionary_id: 字典ID
+            
+        Returns:
+            字典统计信息
+        """
+        try:
+            cursor = self.db_manager.get_cursor()
+            
+            # 基本统计
+            cursor.execute("SELECT COUNT(*) FROM words WHERE dictionary_id = ?", (dictionary_id,))
+            total_words = cursor.fetchone()[0]
+            
+            cursor.execute("SELECT COUNT(DISTINCT word) FROM words WHERE dictionary_id = ?", (dictionary_id,))
+            unique_words = cursor.fetchone()[0]
+            
+            cursor.execute("SELECT AVG(LENGTH(word)) FROM words WHERE dictionary_id = ?", (dictionary_id,))
+            avg_length = cursor.fetchone()[0] or 0
+            
+            cursor.execute("SELECT MIN(LENGTH(word)), MAX(LENGTH(word)) FROM words WHERE dictionary_id = ?", (dictionary_id,))
+            min_length, max_length = cursor.fetchone()
+            
+            return {
+                'total_words': total_words,
+                'unique_words': unique_words,
+                'avg_length': float(avg_length),
+                'min_length': min_length or 0,
+                'max_length': max_length or 0
+            }
+            
+        except Exception as e:
+            logging.error(f"字典分析失败: {e}")
+            return {
+                'total_words': 0,
+                'unique_words': 0,
+                'avg_length': 0,
+                'min_length': 0,
+                'max_length': 0
+            }
+
 # 全局分析器实例
 analyzer = RegexAnalyzer()
 

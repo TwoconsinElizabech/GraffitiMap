@@ -16,8 +16,27 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt, pyqtSignal, QThread, pyqtSlot
 from PyQt6.QtGui import QFont
 
-from core.combination_generator import combination_generator
-from core.dictionary_manager import dictionary_manager
+try:
+    from core.combination_generator import combination_generator
+    from core.dictionary_manager import dictionary_manager
+except ImportError as e:
+    print(f"组合模块导入失败: {e}")
+    # 创建空的占位符类
+    class DummyGenerator:
+        def estimate_combination_count(self, config): return 0
+        def generate_combinations(self, config): return []
+        def save_combination_config(self, name, config): return 0
+        def load_combination_config(self, config_id): return None
+        def get_all_combination_configs(self): return []
+    
+    combination_generator = DummyGenerator()
+    
+    class DummyManager:
+        def get_all_dictionaries(self): return []
+        def create_dictionary(self, name, desc): return 0
+        def add_words(self, dict_id, words): return 0
+    
+    dictionary_manager = DummyManager()
 
 
 class CombinationWorker(QThread):
@@ -246,7 +265,17 @@ class CombinationWidget(QWidget):
         """C区域类型改变事件"""
         # 清空配置区域
         for i in reversed(range(self.area_c_config_layout.count())):
-            self.area_c_config_layout.itemAt(i).widget().setParent(None)
+            item = self.area_c_config_layout.itemAt(i)
+            if item:
+                widget = item.widget()
+                if widget:
+                    widget.setParent(None)
+                else:
+                    # 如果是布局项，递归删除
+                    layout = item.layout()
+                    if layout:
+                        self.clear_layout(layout)
+                        self.area_c_config_layout.removeItem(item)
         
         if "年份" in type_text or "两位年份" in type_text:
             # 年份配置
@@ -304,6 +333,15 @@ class CombinationWidget(QWidget):
             self.area_c_custom_input.setPlaceholderText("每行一个项目")
             self.area_c_custom_input.setMaximumHeight(80)
             self.area_c_config_layout.addWidget(self.area_c_custom_input)
+    
+    def clear_layout(self, layout):
+        """递归清空布局"""
+        while layout.count():
+            item = layout.takeAt(0)
+            if item.widget():
+                item.widget().setParent(None)
+            elif item.layout():
+                self.clear_layout(item.layout())
     
     def create_result_panel(self) -> QWidget:
         """创建结果面板"""
@@ -442,10 +480,11 @@ class CombinationWidget(QWidget):
                     }
                 }
             elif "自定义" in type_text:
-                config['area_c'] = {
-                    'type': 'custom',
-                    'data': self.area_c_custom_input.toPlainText()
-                }
+                if hasattr(self, 'area_c_custom_input'):
+                    config['area_c'] = {
+                        'type': 'custom',
+                        'data': self.area_c_custom_input.toPlainText()
+                    }
         
         return config
     

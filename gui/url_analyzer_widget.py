@@ -15,8 +15,28 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt, pyqtSignal, QThread, pyqtSlot
 from PyQt6.QtGui import QFont
 
-from core.url_analyzer import url_analyzer
-from core.dictionary_manager import dictionary_manager
+try:
+    from core.url_analyzer import url_analyzer
+    from core.dictionary_manager import dictionary_manager
+except ImportError as e:
+    print(f"URL分析模块导入失败: {e}")
+    # 创建空的占位符
+    class DummyAnalyzer:
+        def process_url_file(self, file_path): return [], {}
+        def extract_urls_from_text(self, text): return []
+        def categorize_urls(self, urls): return {'with_params': [], 'without_params': []}
+        def extract_common_parameters(self, urls): return {}
+        def analyze_url(self, url): return {'has_params': False, 'param_count': 0, 'param_names': [], 'params': {}}
+        def save_url_analysis(self, dict_id, urls): return 0
+    
+    url_analyzer = DummyAnalyzer()
+    
+    class DummyManager:
+        def get_all_dictionaries(self): return []
+        def create_dictionary(self, name, desc): return 0
+        def add_words(self, dict_id, words): return 0
+    
+    dictionary_manager = DummyManager()
 
 
 class URLAnalysisWorker(QThread):

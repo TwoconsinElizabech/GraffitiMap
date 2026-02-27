@@ -15,8 +15,27 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt, pyqtSignal, QThread, pyqtSlot
 from PyQt6.QtGui import QFont
 
-from core.fuzzing_generator import fuzzing_generator
-from core.dictionary_manager import dictionary_manager
+try:
+    from core.fuzzing_generator import fuzzing_generator
+    from core.dictionary_manager import dictionary_manager
+except ImportError as e:
+    print(f"模糊测试模块导入失败: {e}")
+    # 创建空的占位符
+    class DummyFuzzing:
+        def generate_fuzzing_variants(self, target, config): return [target]
+        def get_default_config(self): return {'replacement_rules': {}, 'position_swap': False, 'param_injection': False, 'path_traversal': False}
+        def save_fuzzing_config(self, name, rules, swap, injection, traversal): return 0
+        def load_fuzzing_config(self, config_id): return None
+        def get_all_fuzzing_configs(self): return []
+    
+    fuzzing_generator = DummyFuzzing()
+    
+    class DummyManager:
+        def get_all_dictionaries(self): return []
+        def create_dictionary(self, name, desc): return 0
+        def add_words(self, dict_id, words): return 0
+    
+    dictionary_manager = DummyManager()
 
 
 class FuzzingWorker(QThread):
@@ -191,6 +210,23 @@ class FuzzingWidget(QWidget):
         self.path_traversal_cb.setToolTip("添加路径遍历载荷，如 ../../../etc/passwd")
         config_layout.addWidget(self.path_traversal_cb)
         
+        # 路径遍历配置
+        traversal_config_layout = QHBoxLayout()
+        traversal_config_layout.addWidget(QLabel("遍历深度:"))
+        self.traversal_depth_spin = QSpinBox()
+        self.traversal_depth_spin.setRange(1, 10)
+        self.traversal_depth_spin.setValue(3)
+        self.traversal_depth_spin.setToolTip("路径遍历的最大深度")
+        traversal_config_layout.addWidget(self.traversal_depth_spin)
+        
+        traversal_config_layout.addWidget(QLabel("自定义载荷:"))
+        self.custom_payloads_input = QLineEdit()
+        self.custom_payloads_input.setPlaceholderText("用逗号分隔，如: ../,..\\,..../ (留空使用默认)")
+        self.custom_payloads_input.setToolTip("自定义路径遍历载荷，用逗号分隔")
+        traversal_config_layout.addWidget(self.custom_payloads_input)
+        
+        config_layout.addLayout(traversal_config_layout)
+        
         # 结果数量限制
         limit_layout = QHBoxLayout()
         limit_layout.addWidget(QLabel("最大结果数:"))
@@ -220,13 +256,14 @@ class FuzzingWidget(QWidget):
         
         # 替换规则表格
         self.replacement_table = QTableWidget()
-        self.replacement_table.setColumnCount(2)
-        self.replacement_table.setHorizontalHeaderLabels(["原字符串", "替换选项（逗号分隔）"])
+        self.replacement_table.setColumnCount(3)
+        self.replacement_table.setHorizontalHeaderLabels(["启用", "原字符串", "替换选项（逗号分隔）"])
         
         # 设置表格属性
         header = self.replacement_table.horizontalHeader()
         header.setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
-        header.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+        header.setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
+        header.setSectionResizeMode(2, QHeaderView.ResizeMode.Stretch)
         
         self.replacement_table.setAlternatingRowColors(True)
         replacement_layout.addWidget(self.replacement_table)
@@ -251,6 +288,28 @@ class FuzzingWidget(QWidget):
         replacement_btn_layout.addWidget(load_default_btn)
         
         replacement_layout.addLayout(replacement_btn_layout)
+        
+        # 第二行按钮
+        replacement_btn_layout2 = QHBoxLayout()
+        
+        # 全选/全不选按钮
+        select_all_btn = QPushButton("✅ 全选")
+        select_all_btn.clicked.connect(self.select_all_rules)
+        replacement_btn_layout2.addWidget(select_all_btn)
+        
+        deselect_all_btn = QPushButton("❌ 全不选")
+        deselect_all_btn.clicked.connect(self.deselect_all_rules)
+        replacement_btn_layout2.addWidget(deselect_all_btn)
+        
+        # 单独替换按钮
+        replace_only_btn = QPushButton("🔄 仅替换")
+        replace_only_btn.clicked.connect(self.replace_only)
+        replace_only_btn.setToolTip("只执行替换规则，不进行位置交换、路径遍历等操作")
+        replacement_btn_layout2.addWidget(replace_only_btn)
+        
+        replacement_btn_layout2.addStretch()
+        
+        replacement_layout.addLayout(replacement_btn_layout2)
         
         layout.addWidget(replacement_group)
         
@@ -324,26 +383,36 @@ https://test.com/admin/2/panel?session=xyz&debug=true"""
         self.replacement_table.setRowCount(len(replacement_rules))
         
         for row, (original, replacements) in enumerate(replacement_rules.items()):
+            # 启用复选框
+            checkbox = QCheckBox()
+            checkbox.setChecked(True)
+            self.replacement_table.setCellWidget(row, 0, checkbox)
+            
             # 原字符串
             original_item = QTableWidgetItem(original)
-            self.replacement_table.setItem(row, 0, original_item)
+            self.replacement_table.setItem(row, 1, original_item)
             
             # 替换选项
             replacement_text = ', '.join(replacements)
             replacement_item = QTableWidgetItem(replacement_text)
-            self.replacement_table.setItem(row, 1, replacement_item)
+            self.replacement_table.setItem(row, 2, replacement_item)
     
     def add_replacement_rule(self):
         """添加替换规则"""
         row_count = self.replacement_table.rowCount()
         self.replacement_table.insertRow(row_count)
         
+        # 启用复选框
+        checkbox = QCheckBox()
+        checkbox.setChecked(True)
+        self.replacement_table.setCellWidget(row_count, 0, checkbox)
+        
         # 设置默认值
         original_item = QTableWidgetItem("v1")
-        self.replacement_table.setItem(row_count, 0, original_item)
+        self.replacement_table.setItem(row_count, 1, original_item)
         
         replacement_item = QTableWidgetItem("v2, v3, v4")
-        self.replacement_table.setItem(row_count, 1, replacement_item)
+        self.replacement_table.setItem(row_count, 2, replacement_item)
     
     def remove_replacement_rule(self):
         """删除替换规则"""
@@ -360,8 +429,8 @@ https://test.com/admin/2/panel?session=xyz&debug=true"""
         rules = {}
         
         for row in range(self.replacement_table.rowCount()):
-            original_item = self.replacement_table.item(row, 0)
-            replacement_item = self.replacement_table.item(row, 1)
+            original_item = self.replacement_table.item(row, 1)
+            replacement_item = self.replacement_table.item(row, 2)
             
             if original_item and replacement_item:
                 original = original_item.text().strip()
@@ -374,15 +443,99 @@ https://test.com/admin/2/panel?session=xyz&debug=true"""
         
         return rules
     
+    def get_selected_replacement_rules(self) -> List[str]:
+        """获取选中的替换规则"""
+        selected_rules = []
+        
+        for row in range(self.replacement_table.rowCount()):
+            checkbox = self.replacement_table.cellWidget(row, 0)
+            original_item = self.replacement_table.item(row, 1)
+            
+            if checkbox and checkbox.isChecked() and original_item:
+                original = original_item.text().strip()
+                if original:
+                    selected_rules.append(original)
+        
+        return selected_rules
+    
+    def select_all_rules(self):
+        """全选替换规则"""
+        for row in range(self.replacement_table.rowCount()):
+            checkbox = self.replacement_table.cellWidget(row, 0)
+            if checkbox:
+                checkbox.setChecked(True)
+    
+    def deselect_all_rules(self):
+        """全不选替换规则"""
+        for row in range(self.replacement_table.rowCount()):
+            checkbox = self.replacement_table.cellWidget(row, 0)
+            if checkbox:
+                checkbox.setChecked(False)
+    
+    def replace_only(self):
+        """仅执行替换规则"""
+        target_text = self.target_input.toPlainText().strip()
+        if not target_text:
+            QMessageBox.warning(self, "警告", "请输入目标路径或URL")
+            return
+        
+        # 解析目标列表
+        targets = [line.strip() for line in target_text.split('\n') if line.strip()]
+        if not targets:
+            QMessageBox.warning(self, "警告", "没有有效的目标")
+            return
+        
+        try:
+            replacement_rules = self.get_replacement_rules()
+            selected_rules = self.get_selected_replacement_rules()
+            
+            if not replacement_rules:
+                QMessageBox.warning(self, "警告", "没有配置替换规则")
+                return
+            
+            if not selected_rules:
+                QMessageBox.warning(self, "警告", "没有选择要执行的替换规则")
+                return
+            
+            # 只执行替换规则
+            all_variants = []
+            for target in targets:
+                from core.fuzzing_generator import fuzzing_generator
+                variants = fuzzing_generator.replace_path_segments(target, replacement_rules, selected_rules)
+                all_variants.extend(variants)
+            
+            # 去重
+            unique_variants = list(set(all_variants))
+            
+            self.current_variants = unique_variants
+            self.update_result_table()
+            self.result_count_label.setText(f"变体数: {len(unique_variants):,}")
+            self.status_message.emit(f"仅替换模式：成功生成 {len(unique_variants):,} 个变体")
+            
+        except Exception as e:
+            self.logger.error(f"仅替换模式失败: {e}")
+            QMessageBox.critical(self, "错误", f"仅替换模式失败: {str(e)}")
+    
     def get_current_config(self) -> Dict[str, Any]:
         """获取当前配置"""
-        return {
+        config = {
             'replacement_rules': self.get_replacement_rules(),
+            'selected_replacement_rules': self.get_selected_replacement_rules(),
             'position_swap': self.position_swap_cb.isChecked(),
             'param_injection': self.param_injection_cb.isChecked(),
             'path_traversal': self.path_traversal_cb.isChecked(),
+            'traversal_max_depth': self.traversal_depth_spin.value(),
             'max_results': self.max_results_spin.value()
         }
+        
+        # 添加自定义路径遍历载荷
+        custom_payloads_text = self.custom_payloads_input.text().strip()
+        if custom_payloads_text:
+            custom_payloads = [p.strip() for p in custom_payloads_text.split(',') if p.strip()]
+            if custom_payloads:
+                config['custom_traversal_payloads'] = custom_payloads
+        
+        return config
     
     def generate_variants(self):
         """生成模糊测试变体"""
@@ -603,19 +756,32 @@ https://test.com/admin/2/panel?session=xyz&debug=true"""
             self.param_injection_cb.setChecked(config_data.get('param_injection', False))
             self.path_traversal_cb.setChecked(config_data.get('path_traversal', False))
             
+            # 路径遍历配置
+            self.traversal_depth_spin.setValue(config_data.get('traversal_max_depth', 3))
+            custom_payloads = config_data.get('custom_traversal_payloads', [])
+            if custom_payloads:
+                self.custom_payloads_input.setText(', '.join(custom_payloads))
+            else:
+                self.custom_payloads_input.clear()
+            
             # 替换规则
             replacement_rules = config_data.get('replacement_rules', {})
             self.replacement_table.setRowCount(len(replacement_rules))
             
             for row, (original, replacements) in enumerate(replacement_rules.items()):
+                # 启用复选框
+                checkbox = QCheckBox()
+                checkbox.setChecked(True)
+                self.replacement_table.setCellWidget(row, 0, checkbox)
+                
                 # 原字符串
                 original_item = QTableWidgetItem(original)
-                self.replacement_table.setItem(row, 0, original_item)
+                self.replacement_table.setItem(row, 1, original_item)
                 
                 # 替换选项
                 replacement_text = ', '.join(replacements)
                 replacement_item = QTableWidgetItem(replacement_text)
-                self.replacement_table.setItem(row, 1, replacement_item)
+                self.replacement_table.setItem(row, 2, replacement_item)
             
         except Exception as e:
             self.logger.error(f"应用配置失败: {e}")
